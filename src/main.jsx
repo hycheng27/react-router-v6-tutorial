@@ -1,41 +1,27 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
-import './index.css';
 import ErrorPage from './error-page';
-import Contact, { loader as contactLoader, action as contactAction } from './routes/contact';
-import Root, { loader as rootLoader, action as rootAction } from './routes/root';
-import EditContact, { loader as editContactLoader, action as editAction } from './routes/edit';
-import { action as destroyAction } from './routes/destroy';
+import './index.css';
+import VbModel from './routes/vbModel';
 import Index from './routes/index';
+import Root from './routes/root';
+
+// This is the root page of React, which also had the react router defined.
 
 const router = createBrowserRouter([
   {
     path: '/',
     element: <Root />,
     errorElement: <ErrorPage />,
-    loader: rootLoader,
-    action: rootAction,
     children: [
       {
         errorElement: <ErrorPage />, // common error page of all children
         children: [
           { index: true, element: <Index /> },
           {
-            path: 'contacts/:contactId',
-            element: <Contact />,
-            loader: contactLoader,
-            action: contactAction,
-          },
-          {
-            path: 'contacts/:contactId/edit',
-            element: <EditContact />,
-            loader: editContactLoader,
-            action: editAction,
-          },
-          {
-            path: 'contacts/:contactId/destroy',
-            action: destroyAction,
+            path: 'tools/vb-model',
+            element: <VbModel />,
           },
         ],
       },
