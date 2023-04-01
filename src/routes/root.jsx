@@ -8,9 +8,9 @@ export default function Root() {
       <div id='sidebar'>
         <h1>My VB Tools</h1>
         <nav>
-          {tools.length ? (
-            tools.map((tool, i) => (
-              <ul>
+          <ul>
+            {tools.length ? (
+              tools.map((tool, i) => (
                 <li key={`tool-${i}`}>
                   <NavLink
                     to={`tools/${tool.url}`}
@@ -21,18 +21,19 @@ export default function Root() {
                     {tool.name}
                   </NavLink>
                 </li>
-              </ul>
-            ))
-          ) : (
-            <p>
-              <i>No tools</i>
-            </p>
-          )}
+              ))
+            ) : (
+              <p>
+                <i>No tools</i>
+              </p>
+            )}
+          </ul>
         </nav>
       </div>
       <div
         id='detail'
         className={navigation.state === 'loading' ? 'loading' : ''}
+        style={{ overflow: 'auto' }}
       >
         <Outlet />
       </div>
