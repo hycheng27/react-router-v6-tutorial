@@ -6,14 +6,10 @@ export default function VbModel() {
   const [vbClassOutput, setVbClassOutput] = useState('');
 
   const convertTableDefToVbClass = () => {
-    //setVbClassOutput(tableDefInput);
+    let lines = tableDefInput.split('\n');
+    lines = lines.filter((line) => line.includes('NULL'));
 
-    // Split the input into lines
-    const lines = tableDefInput.split('\n');
-
-    // Get the column definitions
-
-    setVbClassOutput(getColumnDefinitions().join('\n'));
+    setVbClassOutput(getColumnDefinitions(lines).join('\n'));
   };
 
   return (

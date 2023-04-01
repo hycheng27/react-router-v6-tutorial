@@ -8,7 +8,7 @@ const testCase = [
 ];
 
 export function getColumnDefinitions(tableDefColLines) {
-  // For each line of column definition, get the column name, type, and if it's nullable.
+  // For each line of tableDefColLines, get the column name, type, and if it's nullable.
   // Make switch cases to construct the output for each type.
   const columnDefs = [];
 
@@ -17,12 +17,33 @@ export function getColumnDefinitions(tableDefColLines) {
     tableDefColLines = testCase;
   }
 
-  for (let i = 0; i < testCase.length; i++) {
-    const line = tableDefColLines[i];
-    const column = line.split(' ');
-    const name = column[0].replace('[', '').replace(']', '');
-    const type = column[1];
-    const isNullable = column[2] === 'NULL' ? true : false;
+  for (let i = 0; i < tableDefColLines.length; i++) {
+    let line = tableDefColLines[i];
+
+    if (line.includes('CONSTRAINT') || line.includes(');')) {
+      continue;
+    }
+
+    // remove leading and trailing spaces
+    line = line.trim();
+
+    // replace multiple spaces with one space
+    line = line.replace(/\s\s+/g, ' ');
+
+    // remove everything in parentheses
+    line = line.replace(/\(.*\)/g, '');
+
+    // remove other keywords
+    const removeKeywords = ['IDENTITY'];
+    for (let keyword in removeKeywords) {
+      line = line.replace(keyword, '');
+    }
+
+    const splittedLine = line.split(' ');
+    console.log('splittedLine', splittedLine);
+    const name = splittedLine[0].replace('[', '').replace(']', '');
+    const type = splittedLine[1];
+    const isNullable = splittedLine[2] === 'NULL' ? true : false;
     console.log(name, type, isNullable);
 
     let colDef = 'Public ' + snakeToCamelCase(name);
