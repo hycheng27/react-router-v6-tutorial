@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { snakeToCamelCase } from '../utils/codeUtil';
 import { getColumnDefinitions } from '../utils/vbModel';
 
 export default function VbModel() {
@@ -7,9 +8,54 @@ export default function VbModel() {
 
   const convertTableDefToVbClass = () => {
     let lines = tableDefInput.split('\n');
-    lines = lines.filter((line) => line.includes('NULL'));
 
-    setVbClassOutput(getColumnDefinitions(lines).join('\n'));
+    // get table name from first line
+    const subStrStart = lines[0].indexOf('[dbo].[') + '[dbo].['.length;
+    const subStrEnd = lines[0].indexOf('] (');
+    const tableName = lines[0].substring(subStrStart, subStrEnd);
+
+    // process column definitions
+    const colLinesInput = lines.filter((line) => line.includes('NULL'));
+    const colDefs = getColumnDefinitions(colLinesInput);
+
+    const columns = colDefs.map((def) => `\t${def.parsedStr}`);
+
+    const constructorParams = colDefs.map((def) => {
+      if (def.isNullable) {
+        if (def.parsedType === 'String') {
+          return `\t\tOptional ${snakeToCamelCase(
+            def.parsedName
+          )} As String = Nothing,`;
+        } else {
+          return `\t\tOptional ${def.parsedName}? As ${def.parsedType} = Nothing,`;
+        }
+      } else {
+        return `\t\t${def.parsedName} As ${def.parsedType},`;
+      }
+    });
+    // remove the last character of the last element
+    constructorParams[constructorParams.length - 1] = constructorParams[
+      constructorParams.length - 1
+    ].substring(0, constructorParams.length - 1);
+
+    const initializers = colDefs.map(
+      (def) => `\t\tMe.${def.parsedName} = ${def.parsedName}`
+    );
+
+    // summarize the output
+    let finalOutput = [
+      `Public Class ${tableName} {`,
+      ...columns,
+      '',
+      '\tPublic Sub New(',
+      ...constructorParams,
+      '\t)',
+      ...initializers,
+      '\tEnd Sub',
+      '}',
+    ];
+
+    setVbClassOutput(finalOutput.join('\n'));
   };
 
   return (
@@ -17,7 +63,7 @@ export default function VbModel() {
       <p>Paste your model here</p>
       <textarea
         placeholder='Your vb model here...'
-        rows='5'
+        rows='15'
         cols='40'
         style={{ margin: 5 }}
         value={tableDefInput}
@@ -52,7 +98,7 @@ export default function VbModel() {
 
         <button
           style={{ color: '#f44250' }}
-          onClick={() => setTableDefInput('')}
+          onClick={() => setVbClassOutput('')}
         >
           Clear
         </button>

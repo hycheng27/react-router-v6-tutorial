@@ -1,104 +1,123 @@
-const testCase = [
-  '[id] INT NOT NULL',
-  '[field0] VARCHAR(50) NULL',
-  '[field1] SMALLINT NULL',
-  '[field2] NVARCHAR(MAX) NULL',
-  '[field3] BIT NULL',
-  '[field3] DATE NULL',
-];
+import { snakeToCamelCase } from './codeUtil';
 
 export function getColumnDefinitions(tableDefColLines) {
   // For each line of tableDefColLines, get the column name, type, and if it's nullable.
   // Make switch cases to construct the output for each type.
-  const columnDefs = [];
-
   if (!Array.isArray(tableDefColLines) || !tableDefColLines.length) {
-    console.warn('Using test case as the input');
-    tableDefColLines = testCase;
+    return [];
   }
 
-  for (let i = 0; i < tableDefColLines.length; i++) {
-    let line = tableDefColLines[i];
-
+  // clear non-related lines
+  tableDefColLines = tableDefColLines.filter((line) => {
     if (line.includes('CONSTRAINT') || line.includes(');')) {
-      continue;
+      return false;
+    }
+    return true;
+  });
+
+  // do some data cleaning
+  const lineObjs = tableDefColLines
+    .map((line) => {
+      // remove everything in parentheses
+      line = line.replace(/\(.*\)/g, '');
+
+      // remove other keywords
+      const removeChars = ['IDENTITY', ','];
+      removeChars.forEach((chars) => {
+        line = line.replace(chars, '');
+      });
+
+      // replace multiple spaces with one space
+      line = line.replace(/\s\s+/g, ' ');
+
+      // remove leading and trailing spaces
+      line = line.trim();
+
+      // split the line into an array and return the lineObj
+      const splittedLine = line.split(' ');
+      const lineObj = {
+        name: splittedLine[0].replace('[', '').replace(']', ''),
+        type: splittedLine[1],
+        isNullable: splittedLine[2] === 'NULL' ? true : false,
+      };
+      return lineObj;
+    })
+    .sort((a, b) => {
+      // sort the lines by nullable or not
+      if (a.isNullable && !b.isNullable) {
+        return 1;
+      } else if (!a.isNullable && b.isNullable) {
+        return -1;
+      } else {
+        // then sort by is string or not
+        if (!a.isNullable) {
+          // don't sort if the line is not nullable
+          return 0;
+        }
+        if (a.type.includes('VARCHAR') && !b.type.includes('VARCHAR')) {
+          return 1;
+        } else if (!a.type.includes('VARCHAR') && b.type.includes('VARCHAR')) {
+          return -1;
+        } else {
+          return 0;
+        }
+      }
+    });
+
+  const columnDefs = [];
+  for (let i = 0; i < lineObjs.length; i++) {
+    let lineObj = lineObjs[i];
+
+    let parsedStr = 'Public ' + snakeToCamelCase(lineObj.name);
+
+    let parsedType = '';
+    switch (lineObj.type) {
+      // handle varchar types
+      case 'VARCHAR':
+      case 'NVARCHAR':
+        parsedType = 'String';
+        break;
+
+      // handle int types
+      case 'INT':
+        parsedType = 'Integer';
+        break;
+
+      // handle smallint types
+      case 'SMALLINT':
+        parsedType = 'Short';
+        break;
+
+      // handle datetime types
+      case 'DATETIME':
+        parsedType = 'Date';
+        break;
+
+      // handle bit types
+      case 'BIT':
+        parsedType = 'Boolean';
+        break;
+
+      default:
+        parsedType = 'UnknownType';
+        break;
     }
 
-    // remove leading and trailing spaces
-    line = line.trim();
-
-    // replace multiple spaces with one space
-    line = line.replace(/\s\s+/g, ' ');
-
-    // remove everything in parentheses
-    line = line.replace(/\(.*\)/g, '');
-
-    // remove other keywords
-    const removeKeywords = ['IDENTITY'];
-    for (let keyword in removeKeywords) {
-      line = line.replace(keyword, '');
-    }
-
-    const splittedLine = line.split(' ');
-    console.log('splittedLine', splittedLine);
-    const name = splittedLine[0].replace('[', '').replace(']', '');
-    const type = splittedLine[1];
-    const isNullable = splittedLine[2] === 'NULL' ? true : false;
-    console.log(name, type, isNullable);
-
-    let colDef = 'Public ' + snakeToCamelCase(name);
-
-    // handle varchar types
-    if (type.includes('VARCHAR')) {
-      colDef += ' As String';
-
-      if (isNullable) {
-        colDef += ' = Nothing';
+    parsedStr += ` As ${parsedType}`;
+    if (parsedStr.isNullable) {
+      if (parsedType === 'String') {
+        parsedStr += ' = Nothing';
+      } else {
+        parsedStr += '?';
       }
     }
 
-    // handle int types
-    else if (type.includes('INT')) {
-      colDef += ' As Integer';
-
-      if (isNullable) {
-        colDef += '?';
-      }
-    }
-
-    // handle smallint types
-    else if (type.includes('SMALLINT')) {
-      colDef += ' As Short';
-
-      if (isNullable) {
-        colDef += '?';
-      }
-    }
-
-    // handle date types
-    else if (type.includes('DATE')) {
-      colDef += ' As Date';
-
-      if (isNullable) {
-        colDef += '?';
-      }
-    }
-
-    // handle bit types
-    else if (type.includes('BIT')) {
-      colDef += ' As Boolean';
-
-      if (isNullable) {
-        colDef += '?';
-      }
-    }
-    columnDefs.push(colDef);
+    columnDefs.push({
+      parsedStr: parsedStr,
+      parsedName: snakeToCamelCase(lineObj.name),
+      parsedType: parsedType,
+      ...lineObj,
+    });
   }
   return columnDefs;
-}
-
-export function snakeToCamelCase(str) {
-  return str
-    .toLowerCase()
-    .replace(/[^a-zA-Z0-9]+(.)/g, (m, chr) => chr.toUpperCase());
 }
