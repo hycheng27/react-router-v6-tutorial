@@ -22,12 +22,12 @@ export default function VbModel() {
     const constructorParams = colDefs.map((def) => {
       if (def.isNullable) {
         if (def.parsedType === 'String') {
-          return `\t\tOptional ${snakeToCamelCase(def.parsedName)} As String = Nothing,`;
+          return `Optional ${snakeToCamelCase(def.parsedName)} As String = Nothing,`;
         } else {
-          return `\t\tOptional ${def.parsedName}? As ${def.parsedType} = Nothing,`;
+          return `Optional ${def.parsedName}? As ${def.parsedType} = Nothing,`;
         }
       } else {
-        return `\t\t${def.parsedName} As ${def.parsedType},`;
+        return `${def.parsedName} As ${def.parsedType},`;
       }
     });
 
@@ -35,18 +35,19 @@ export default function VbModel() {
     constructorParams[constructorParams.length - 1] = constructorParams[constructorParams.length - 1].replace(',', '');
 
     // define the class initializers
-    const initializers = colDefs.map((def) => `\t\tMe.${def.parsedName} = ${def.parsedName}`);
+    const initializers = colDefs.map((def) => `Me.${def.parsedName} = ${def.parsedName}`);
 
     // first part finished.
     const modelName = snakeToPascalCase(tableName.substring(4).replace('table', 'model'));
     const classModel = [
-      `Public Class ${modelName} {`,
+      `Public Class ${modelName}`,
+      `\tPublic Const tableName As String = "${tableName}"\n`,
       ...colDefs.filter((def) => def.name != 'id').map((def) => `\t${def.parsedStr}`),
       '',
       '\tPublic Sub New(',
-      ...constructorParams,
+      ...constructorParams.map((line) => `\t\t${line}`),
       '\t)',
-      ...initializers,
+      ...initializers.map((line) => `\t\t${line}`),
       '\tEnd Sub',
       'End Class',
     ];
@@ -63,7 +64,7 @@ export default function VbModel() {
 
     const resClassModel = [
       getResModelComment(modelName),
-      `Public Class Res${modelName} {`,
+      `Public Class Res${modelName}`,
       ...resColDefs.map((def) => `\t${def.parsedStr}`),
       '',
       '\tPublic Sub New(dataRow As DataRow)',
@@ -74,7 +75,14 @@ export default function VbModel() {
     ];
 
     // summarize the output
-    let finalOutput = [...classModel, '\n', ...resClassModel];
+    let finalOutput = [
+      'Imports ETS.CodeUtils\n',
+      `Namespace NS${modelName}`,
+      ...classModel.map((line) => `\t${line}`),
+      '\n',
+      ...resClassModel.map((line) => `\t${line}`),
+      'End Namespace',
+    ];
     setVbClassOutput(finalOutput.join('\n'));
   };
 
