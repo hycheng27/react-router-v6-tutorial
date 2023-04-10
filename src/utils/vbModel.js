@@ -1,8 +1,6 @@
 import { snakeToCamelCase, numberToWord } from './codeUtil';
 
-export function getColumnDefinitions(tableDefColLines) {
-  // For each line of tableDefColLines, get the column name, type, and if it's nullable.
-  // Make switch cases to construct the output for each type.
+function cleanAndGetColsInfo(tableDefColLines) {
   if (!Array.isArray(tableDefColLines) || !tableDefColLines.length) {
     return [];
   }
@@ -16,78 +14,82 @@ export function getColumnDefinitions(tableDefColLines) {
   });
 
   // do some data cleaning
-  const lineObjs = tableDefColLines
-    .map((line) => {
-      // remove everything in parentheses
-      line = line.replace(/\(.*\)/g, '');
+  const colsInfo = tableDefColLines.map((line) => {
+    // remove everything in parentheses
+    line = line.replace(/\(.*\)/g, '');
 
-      // remove other keywords
-      const removeChars = ['IDENTITY', ','];
-      removeChars.forEach((chars) => {
-        line = line.replace(chars, '');
-      });
-
-      // replace multiple spaces with one space
-      line = line.replace(/\s\s+/g, ' ');
-
-      // remove leading and trailing spaces
-      line = line.trim();
-
-      // split the line into an array and return the lineObj
-      const splittedLine = line.split(' ');
-      const lineObj = {
-        name: splittedLine[0].replace('[', '').replace(']', ''),
-        type: splittedLine[1],
-        isNullable: splittedLine[2] === 'NULL' ? true : false,
-      };
-
-      // replace with english word if the first char is a number
-      if (lineObj.name[0] >= '0' && lineObj.name[0] <= '9') {
-        lineObj.name = numberToWord(lineObj.name[0]) + '_' + lineObj.name.substring(1);
-      }
-
-      return lineObj;
-    })
-    .sort((a, b) => {
-      // sort the lines by nullable or not
-      if (a.isNullable && !b.isNullable) {
-        return 1;
-      } else if (!a.isNullable && b.isNullable) {
-        return -1;
-      } else {
-        // then sort by is string or not
-        if (!a.isNullable) {
-          // don't sort if the line is not nullable
-          return 0;
-        }
-        if (a.type.includes('VARCHAR') && !b.type.includes('VARCHAR')) {
-          return 1;
-        } else if (!a.type.includes('VARCHAR') && b.type.includes('VARCHAR')) {
-          return -1;
-        } else {
-          return 0;
-        }
-      }
+    // remove other keywords
+    const removeChars = ['IDENTITY', ','];
+    removeChars.forEach((chars) => {
+      line = line.replace(chars, '');
     });
 
+    // replace multiple spaces with one space
+    line = line.replace(/\s\s+/g, ' ');
+
+    // remove leading and trailing spaces
+    line = line.trim();
+
+    // split the line into an array and return the colInfo
+    const splittedLine = line.split(' ');
+    const colInfo = {
+      name: splittedLine[0].replace('[', '').replace(']', ''),
+      type: splittedLine[1],
+      isNullable: splittedLine[2] === 'NULL' ? true : false,
+    };
+
+    // replace with english word if the first char is a number
+    if (colInfo.name[0] >= '0' && colInfo.name[0] <= '9') {
+      colInfo.name = numberToWord(colInfo.name[0]) + '_' + colInfo.name.substring(1);
+    }
+
+    return colInfo;
+  });
+
+  return colsInfo;
+}
+
+export function getColumnDefinitions(tableDefColLines) {
+  const colsInfo = cleanAndGetColsInfo(tableDefColLines).sort((a, b) => {
+    // sort the lines by nullable or not
+    if (a.isNullable && !b.isNullable) {
+      return 1;
+    } else if (!a.isNullable && b.isNullable) {
+      return -1;
+    } else {
+      // then sort by is string or not
+      if (!a.isNullable) {
+        // don't sort if the line is not nullable
+        return 0;
+      }
+      if (a.type.includes('VARCHAR') && !b.type.includes('VARCHAR')) {
+        return 1;
+      } else if (!a.type.includes('VARCHAR') && b.type.includes('VARCHAR')) {
+        return -1;
+      } else {
+        return 0;
+      }
+    }
+  });
+
   const columnDefs = [];
-  for (let i = 0; i < lineObjs.length; i++) {
-    let lineObj = lineObjs[i];
+  for (let i = 0; i < colsInfo.length; i++) {
+    let colInfo = colsInfo[i];
 
     let parsedName;
     const reservedWords = ['to', 'step', 'module'];
-    if (reservedWords.includes(lineObj.name)) {
+    if (reservedWords.includes(colInfo.name)) {
       // if the name is a reserved word, add brackets around it
-      parsedName = '[' + snakeToCamelCase(lineObj.name) + ']';
+      parsedName = '[' + snakeToCamelCase(colInfo.name) + ']';
     } else {
       // otherwise, just convert it to camel case
-      parsedName = snakeToCamelCase(lineObj.name);
+      parsedName = snakeToCamelCase(colInfo.name);
     }
 
     let parsedStr = 'Public ' + parsedName;
 
     let parsedType = '';
-    switch (lineObj.type) {
+    switch (colInfo.type) {
       // handle varchar types
       case 'VARCHAR':
       case 'NVARCHAR':
@@ -132,8 +134,33 @@ export function getColumnDefinitions(tableDefColLines) {
       parsedStr,
       parsedName,
       parsedType,
-      ...lineObj,
+      ...colInfo,
     });
   }
   return columnDefs;
+}
+
+// change the parsed column definitions for res-models
+export function getResColumnDefinitions(colDefs) {
+  return colDefs.map((colDef) => {
+    const { parsedName, parsedType } = colDef;
+    let parsedStr = '';
+    if (parsedType === 'String') {
+      parsedStr = `Public ${parsedName} As String = Nothing`;
+    } else {
+      parsedStr = `Public ${parsedName} As ${parsedType}?`;
+    }
+
+    return {
+      ...colDef,
+      parsedStr,
+    };
+  });
+}
+
+export function getResModelComment(modelName) {
+  return `''' <summary>
+    ''' Every field from <see cref="${modelName}"/> except all of them are optional.<br/>
+    ''' Useful for receiving data from DB when not all fields are selected.
+    ''' </summary>`;
 }

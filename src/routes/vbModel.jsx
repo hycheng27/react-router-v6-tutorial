@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { snakeToCamelCase, snakeToPascalCase } from '../utils/codeUtil';
-import { getColumnDefinitions } from '../utils/vbModel';
+import { getColumnDefinitions, getResColumnDefinitions, getResModelComment } from '../utils/vbModel';
 
 export default function VbModel() {
   const [tableDefInput, setTableDefInput] = useState('');
@@ -8,8 +8,6 @@ export default function VbModel() {
 
   const convertTableDefToVbClass = () => {
     let lines = tableDefInput.split('\n');
-
-    // -- First part: the class model
 
     // get table name from first line
     const subStrStart = lines[0].indexOf('[dbo].[') + '[dbo].['.length;
@@ -19,9 +17,6 @@ export default function VbModel() {
     // process column definitions
     const colLinesInput = lines.filter((line) => line.includes('NULL'));
     const colDefs = getColumnDefinitions(colLinesInput);
-
-    // define the class fields (columns)
-    const columns = colDefs.map((def) => `\t${def.parsedStr}`);
 
     // define the class constructor parameters
     const constructorParams = colDefs.map((def) => {
@@ -43,24 +38,43 @@ export default function VbModel() {
     const initializers = colDefs.map((def) => `\t\tMe.${def.parsedName} = ${def.parsedName}`);
 
     // first part finished.
+    const modelName = snakeToPascalCase(tableName.substring(4).replace('table', 'model'));
     const classModel = [
-      `Public Class ${snakeToPascalCase(tableName.substring(4).replace('table', 'model'))} {`,
-      ...columns,
+      `Public Class ${modelName} {`,
+      ...colDefs.map((def) => `\t${def.parsedStr}`),
       '',
       '\tPublic Sub New(',
       ...constructorParams,
       '\t)',
       ...initializers,
       '\tEnd Sub',
-      '}',
+      'End Class',
     ];
 
     // -- Second part: the res-class model
-    const resClassModel = [];
+    const resColDefs = getResColumnDefinitions(colDefs);
+
+    // define the res-class initializers
+    const resInitializers = colDefs.map(
+      (def) => `\t\tIf cols.Contains("${def.name}") Then
+    \t\t${def.parsedName} = IsNull(dataRow("${def.name}"), Nothing)
+    \tEnd If`
+    );
+
+    const resClassModel = [
+      getResModelComment(modelName),
+      `Public Class Res${modelName} {`,
+      ...resColDefs.map((def) => `\t${def.parsedStr}`),
+      '',
+      '\tPublic Sub New(dataRow As DataRow)',
+      '\t\tDim cols = dataRow.Table.Columns\n',
+      ...resInitializers,
+      '\tEnd Sub',
+      'End Class',
+    ];
 
     // summarize the output
-    let finalOutput = [...classModel, ...resClassModel];
-
+    let finalOutput = [...classModel, '\n', ...resClassModel];
     setVbClassOutput(finalOutput.join('\n'));
   };
 
