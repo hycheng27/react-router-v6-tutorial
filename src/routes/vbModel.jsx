@@ -1,6 +1,11 @@
 import React, { useState } from 'react';
 import { snakeToCamelCase, snakeToPascalCase } from '../utils/codeUtil';
-import { getColumnDefinitions, getResColumnDefinitions, getResModelComment } from '../utils/vbModel';
+import {
+  getColumnDefinitions,
+  getResColumnDefinitions,
+  getResModelComment,
+  getColEnumsComment,
+} from '../utils/vbModel';
 
 export default function VbModel() {
   const [tableDefInput, setTableDefInput] = useState('');
@@ -37,7 +42,7 @@ export default function VbModel() {
     // define the class initializers
     const initializers = colDefs.map((def) => `Me.${def.parsedName} = ${def.parsedName}`);
 
-    // first part finished.
+    // -- First part: the class model
     const modelName = snakeToPascalCase(tableName.substring(4).replace('table', 'model'));
     const classModel = [
       `Public Class ${modelName}`,
@@ -56,22 +61,30 @@ export default function VbModel() {
     const resColDefs = getResColumnDefinitions(colDefs);
 
     // define the res-class initializers
-    const resInitializers = colDefs.map(
-      (def) => `\t\tIf cols.Contains("${def.name}") Then
-    \t\t${def.parsedName} = IsNull(dataRow("${def.name}"), Nothing)
-    \tEnd If`
-    );
+    const resInitializers = colDefs.map((def) => {
+      return [
+        `If cols.Contains("${def.name}") Then`,
+        `\t${def.parsedName} = IsNull(dataRow("${def.name}"), Nothing)`,
+        'End If',
+      ].join('\n\t\t');
+    });
 
     const resClassModel = [
-      getResModelComment(modelName),
       `Public Class Res${modelName}`,
       ...resColDefs.map((def) => `\t${def.parsedStr}`),
       '',
       '\tPublic Sub New(dataRow As DataRow)',
       '\t\tDim cols = dataRow.Table.Columns\n',
-      ...resInitializers,
+      ...resInitializers.map((line) => `\t${line}`),
       '\tEnd Sub',
       'End Class',
+    ];
+
+    // -- Third part: the column enums
+    const colEnums = [
+      `Public Enum Enum${modelName}Columns`,
+      ...colDefs.map((def) => '\t' + def.parsedName),
+      'End Enum',
     ];
 
     // summarize the output
@@ -79,8 +92,12 @@ export default function VbModel() {
       'Imports ETS.CodeUtils\n',
       `Namespace NS${modelName}`,
       ...classModel.map((line) => `\t${line}`),
-      '\n',
+      '',
+      getResModelComment(modelName),
       ...resClassModel.map((line) => `\t${line}`),
+      '',
+      getColEnumsComment(),
+      ...colEnums.map((line) => `\t${line}`),
       'End Namespace',
     ];
     setVbClassOutput(finalOutput.join('\n'));

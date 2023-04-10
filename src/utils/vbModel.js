@@ -158,9 +158,27 @@ export function getResColumnDefinitions(colDefs) {
   });
 }
 
-export function getResModelComment(modelName) {
-  return `''' <summary>
-    ''' Every field from <see cref="${modelName}"/> except all of them are optional.<br/>
-    ''' Useful for receiving data from DB when not all fields are selected.
-    ''' </summary>`;
+export function getResModelComment(modelName, tabSize = 1) {
+  let tab = '';
+  for (let i = 0; i < tabSize; i++) {
+    tab += '\t';
+  }
+  return [
+    "''' <summary>",
+    `''' Every field from <see cref="${modelName}"/> except all of them are optional.<br/>`,
+    "''' Useful for receiving data from DB when not all fields are selected.",
+    "''' </summary>",
+  ]
+    .map((line) => tab + line)
+    .join('\n');
+}
+
+export function getColEnumsComment(tabSize = 1) {
+  let tab = '';
+  for (let i = 0; i < tabSize; i++) {
+    tab += '\t';
+  }
+  return ["''' <summary>", "''' Abstracted column names with enums. The indexes are not important.", "''' </summary>"]
+    .map((line) => tab + line)
+    .join('\n');
 }
