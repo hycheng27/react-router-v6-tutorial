@@ -41,7 +41,7 @@ export default function VbModel() {
     const modelName = snakeToPascalCase(tableName.substring(4).replace('table', 'model'));
     const classModel = [
       `Public Class ${modelName} {`,
-      ...colDefs.map((def) => `\t${def.parsedStr}`),
+      ...colDefs.filter((def) => def.name != 'id').map((def) => `\t${def.parsedStr}`),
       '',
       '\tPublic Sub New(',
       ...constructorParams,
