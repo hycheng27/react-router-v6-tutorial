@@ -158,27 +158,57 @@ export function getResColumnDefinitions(colDefs) {
   });
 }
 
-export function getResModelComment(modelName, tabSize = 1) {
+function getTab(size = 1) {
   let tab = '';
-  for (let i = 0; i < tabSize; i++) {
+  for (let i = 0; i < size; i++) {
     tab += '\t';
   }
+  return tab;
+}
+
+export function getResModelComment(modelName, tabSize = 1) {
+  let tabs = getTab(tabSize);
   return [
     "''' <summary>",
     `''' Every field from <see cref="${modelName}"/> except all of them are optional.<br/>`,
     "''' Useful for receiving data from DB when not all fields are selected.",
     "''' </summary>",
-  ]
-    .map((line) => tab + line)
-    .join('\n');
+  ].join('\n' + tabs);
 }
 
 export function getColEnumsComment(tabSize = 1) {
-  let tab = '';
-  for (let i = 0; i < tabSize; i++) {
-    tab += '\t';
-  }
-  return ["''' <summary>", "''' Abstracted column names with enums. The indexes are not important.", "''' </summary>"]
-    .map((line) => tab + line)
-    .join('\n');
+  let tabs = getTab(tabSize);
+  return [
+    "''' <summary>",
+    "''' Abstracted column names with enums. The indexes are not important.",
+    "''' </summary>",
+  ].join('\n' + tabs);
+}
+
+export function getColEnumClassComment(modelName, tabSize = 1) {
+  let tabs = getTab(tabSize);
+  return [
+    "''' <summary>",
+    `''' A Helper class for getting string column names for <see cref="${modelName}"/>. See <see cref="${modelName}Column.GetName"/>.`,
+    "''' </summary>",
+  ].join('\n' + tabs);
+}
+
+export function getColEnumClassGetNameComment(modelName, tabSize = 1) {
+  let tabs = getTab(tabSize);
+  return [
+    "''' <summary>",
+    `''' Gets the string representation of the enum table name <see cref="Enum${modelName}Columns"/>.`,
+    "''' </summary>",
+  ].join('\n' + tabs);
+}
+
+export function getCommaSeparatedNamesComment(modelName, tabSize = 1) {
+  let tabs = getTab(tabSize);
+  return [
+    "''' <summary>",
+    `'''Receives an array of <see cref="Enum${modelName}Columns"/> and returns a comma separated string for SQL query columns selection.`,
+    `''' <returns>a comma separated string, e.g. "id, tender_id, created_by"</returns>`,
+    "''' </summary>",
+  ].join('\n' + tabs);
 }

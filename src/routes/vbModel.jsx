@@ -5,6 +5,9 @@ import {
   getResColumnDefinitions,
   getResModelComment,
   getColEnumsComment,
+  getColEnumClassComment,
+  getColEnumClassGetNameComment,
+  getCommaSeparatedNamesComment,
 } from '../utils/vbModel';
 
 export default function VbModel() {
@@ -42,7 +45,7 @@ export default function VbModel() {
     // define the class initializers
     const initializers = colDefs.map((def) => `Me.${def.parsedName} = ${def.parsedName}`);
 
-    // -- First part: the class model
+    // -- 1st part: the class model
     const modelName = snakeToPascalCase(tableName.substring(4).replace('table', 'model'));
     const classModel = [
       `Public Class ${modelName}`,
@@ -57,7 +60,7 @@ export default function VbModel() {
       'End Class',
     ];
 
-    // -- Second part: the res-class model
+    // -- 2nd part: the res-class model
     const resColDefs = getResColumnDefinitions(colDefs);
 
     // define the res-class initializers
@@ -70,6 +73,7 @@ export default function VbModel() {
     });
 
     const resClassModel = [
+      getResModelComment(modelName),
       `Public Class Res${modelName}`,
       ...resColDefs.map((def) => `\t${def.parsedStr}`),
       '',
@@ -80,11 +84,37 @@ export default function VbModel() {
       'End Class',
     ];
 
-    // -- Third part: the column enums
+    // -- 3rd part: the column enums
     const colEnums = [
+      getColEnumsComment(),
       `Public Enum Enum${modelName}Columns`,
       ...colDefs.map((def) => '\t' + def.parsedName),
       'End Enum',
+    ];
+
+    // -- 4th part: the column enum class
+    const colEnumClass = [
+      getColEnumClassComment(modelName),
+      `Public Class ${modelName}Column`,
+      '',
+      getColEnumClassGetNameComment(modelName),
+      `Public Shared ReadOnly GetName As New Dictionary(Of Enum${modelName}Columns, String) From {`,
+      ...colDefs.map((def) => `\t{Enum${modelName}Columns.${def.parsedName}, "${def.name}"},`),
+      '}',
+      'End Class',
+    ];
+
+    // -- 5th part: the function
+    const functionGetCommaSeparatedColNames = [
+      getCommaSeparatedNamesComment(modelName),
+      `Public Shared Function GetCommaSeparatedColNames(cols As Enum${modelName}Columns()) As String`,
+      '\tDim _list = New List(Of String)',
+      '\tFor Each col In cols',
+      '\t\t_list.Add(GetName(col))',
+      '\tNext',
+      '\tDim colNames = Join(_list.ToArray(), ", ")',
+      '\tReturn colNames',
+      'End Function',
     ];
 
     // summarize the output
@@ -93,11 +123,14 @@ export default function VbModel() {
       `Namespace NS${modelName}`,
       ...classModel.map((line) => `\t${line}`),
       '',
-      getResModelComment(modelName),
       ...resClassModel.map((line) => `\t${line}`),
       '',
-      getColEnumsComment(),
       ...colEnums.map((line) => `\t${line}`),
+      '',
+      ...colEnumClass.map((line) => `\t${line}`),
+      '',
+      ...functionGetCommaSeparatedColNames.map((line) => `\t${line}`),
+      ,
       'End Namespace',
     ];
     setVbClassOutput(finalOutput.join('\n'));
