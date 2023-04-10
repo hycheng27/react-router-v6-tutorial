@@ -74,7 +74,17 @@ export function getColumnDefinitions(tableDefColLines) {
   for (let i = 0; i < lineObjs.length; i++) {
     let lineObj = lineObjs[i];
 
-    let parsedStr = 'Public ' + snakeToCamelCase(lineObj.name);
+    let parsedName;
+    const reservedWords = ['to', 'step', 'module'];
+    if (reservedWords.includes(lineObj.name)) {
+      // if the name is a reserved word, add brackets around it
+      parsedName = '[' + snakeToCamelCase(lineObj.name) + ']';
+    } else {
+      // otherwise, just convert it to camel case
+      parsedName = snakeToCamelCase(lineObj.name);
+    }
+
+    let parsedStr = 'Public ' + parsedName;
 
     let parsedType = '';
     switch (lineObj.type) {
@@ -119,9 +129,9 @@ export function getColumnDefinitions(tableDefColLines) {
     }
 
     columnDefs.push({
-      parsedStr: parsedStr,
-      parsedName: snakeToCamelCase(lineObj.name),
-      parsedType: parsedType,
+      parsedStr,
+      parsedName,
+      parsedType,
       ...lineObj,
     });
   }

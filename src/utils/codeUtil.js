@@ -1,9 +1,9 @@
-// turns string to camelCase
+// turns string from snake_case to camelCase
 export function snakeToCamelCase(str) {
   return str.toLowerCase().replace(/[^a-zA-Z0-9]+(.)/g, (m, chr) => chr.toUpperCase());
 }
 
-// turns string to PascalCase
+// turns string from snake_case to PascalCase
 export function snakeToPascalCase(str) {
   return str.toLowerCase().replace(/(?:^|[^a-zA-Z0-9]+)(.)/g, (m, chr) => chr.toUpperCase());
 }

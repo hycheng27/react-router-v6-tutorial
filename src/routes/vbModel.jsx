@@ -9,6 +9,8 @@ export default function VbModel() {
   const convertTableDefToVbClass = () => {
     let lines = tableDefInput.split('\n');
 
+    // -- First part: the class model
+
     // get table name from first line
     const subStrStart = lines[0].indexOf('[dbo].[') + '[dbo].['.length;
     const subStrEnd = lines[0].indexOf('] (');
@@ -40,8 +42,8 @@ export default function VbModel() {
     // define the class initializers
     const initializers = colDefs.map((def) => `\t\tMe.${def.parsedName} = ${def.parsedName}`);
 
-    // summarize the output
-    let finalOutput = [
+    // first part finished.
+    const classModel = [
       `Public Class ${snakeToPascalCase(tableName.substring(4).replace('table', 'model'))} {`,
       ...columns,
       '',
@@ -52,6 +54,12 @@ export default function VbModel() {
       '\tEnd Sub',
       '}',
     ];
+
+    // -- Second part: the res-class model
+    const resClassModel = [];
+
+    // summarize the output
+    let finalOutput = [...classModel, ...resClassModel];
 
     setVbClassOutput(finalOutput.join('\n'));
   };

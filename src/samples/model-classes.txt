@@ -1,0 +1,125 @@
+Imports System.Data
+Imports ETS.CodeUtils
+
+Namespace NSProcurerApprovalFlowModel
+
+    Public Class ProcurerApprovalFlowModel
+        Public Const tableName As String = "ets_procurer_approval_flow_table"
+
+        Public [step] As Integer
+        Public requestType As String
+        Public [module] As String
+        Public userRole As String
+        Public rejectTo As Integer
+        Public enable As Integer
+        Public roleId As Integer?
+
+        Public Sub New([step] As Integer, requestType As String, [module] As String, userRole As String, rejectTo As Integer, enable As Integer, roleId As Integer?)
+            Me.step = [step]
+            Me.requestType = requestType
+            Me.module = [module]
+            Me.userRole = userRole
+            Me.rejectTo = rejectTo
+            Me.enable = enable
+            Me.roleId = roleId
+        End Sub
+    End Class
+
+    ''' <summary>
+    ''' Every field from <see cref="ProcurerApprovalFlowModel"/> except all of them are optional.<br/>
+    ''' Useful for receiving data from DB when not all fields are selected.
+    ''' </summary>
+    Public Class ResProcurerApprovalFlowModel
+        Public id As Integer?
+
+        Public [step] As Integer?
+        Public requestType As String = Nothing
+        Public [module] As String = Nothing
+        Public userRole As String = Nothing
+        Public rejectTo As Integer?
+        Public enable As Integer?
+        Public roleId As Integer?
+
+        ''' <summary>
+        ''' Init the model with a <see cref="DataRow"/>
+        ''' </summary>
+        ''' <param name="dataRow"></param>
+        Public Sub New(dataRow As DataRow)
+            Dim cols = dataRow.Table.Columns
+
+            If cols.Contains("id") Then
+                id = IsNull(dataRow("id"), Nothing)
+            End If
+            If cols.Contains("step") Then
+                [step] = IsNull(dataRow("step"), Nothing)
+            End If
+            If cols.Contains("request_type") Then
+                requestType = IsNull(dataRow("request_type"), Nothing)
+            End If
+            If cols.Contains("module") Then
+                [module] = IsNull(dataRow("module"), Nothing)
+            End If
+            If cols.Contains("user_role") Then
+                userRole = IsNull(dataRow("user_role"), Nothing)
+            End If
+            If cols.Contains("reject_to") Then
+                rejectTo = IsNull(dataRow("reject_to"), Nothing)
+            End If
+            If cols.Contains("enable") Then
+                enable = IsNull(dataRow("enable"), Nothing)
+            End If
+            If cols.Contains("role_id") Then
+                roleId = IsNull(dataRow("role_id"), Nothing)
+            End If
+        End Sub
+    End Class
+
+    ''' <summary>
+    ''' Abstracted column names with enums. The indexes are not important.
+    ''' </summary>
+    Public Enum EnumProcurerApprovalColumns
+        id
+        [step]
+        requestType
+        [module]
+        userRole
+        rejectTo
+        enable
+        roleId
+    End Enum
+
+    ''' <summary>
+    ''' A Helper class for getting string column names for <see cref="ProcurerApprovalFlowModel"/>. See <see cref="ProcurerApprovalFlowModelColumn.GetName"/>.
+    ''' </summary>
+    Public Class ProcurerApprovalFlowModelColumn
+
+        ''' <summary>
+        ''' Gets the string representation of the enum table name <see cref="EnumProcurerApprovalColumns"/>.
+        ''' </summary>
+        Public Shared ReadOnly GetName As New Dictionary(Of EnumProcurerApprovalColumns, String) From {
+            {EnumProcurerApprovalColumns.id, "id"},
+            {EnumProcurerApprovalColumns.step, "step"},
+            {EnumProcurerApprovalColumns.requestType, "request_type"},
+            {EnumProcurerApprovalColumns.module, "module"},
+            {EnumProcurerApprovalColumns.userRole, "user_role"},
+            {EnumProcurerApprovalColumns.rejectTo, "reject_to"},
+            {EnumProcurerApprovalColumns.enable, "enable"},
+            {EnumProcurerApprovalColumns.roleId, "role_id"}
+        }
+
+        ''' <summary>
+        ''' Receives an array of <see cref="EnumProcurerApprovalColumns"/> and returns a comma separated string for SQL query columns selection.
+        ''' </summary>
+        ''' <param name="cols"></param>
+        ''' <returns>a comma separated string, e.g. "id, tender_id, created_by"</returns>
+        Public Shared Function GetCommaSeparatedColNames(cols As EnumProcurerApprovalColumns()) As String
+            Dim _list = New List(Of String)
+            For Each col In cols
+                _list.Add(GetName(col))
+            Next
+            Dim colNames = Join(_list.ToArray(), ", ")
+            Return colNames
+        End Function
+    End Class
+
+End Namespace

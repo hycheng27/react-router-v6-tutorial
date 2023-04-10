@@ -1,0 +1,22 @@
+Public Shared Sub Update(ByRef db As ETS.OleDb, model As ProcurerApprovalStringModel)
+    'Find the target row
+    Dim sql = "SELECT * FROM " & ProcurerApprovalStringModel.tableName
+    sql &= " WHERE request_id = " & db.SQLEncode(model.requestId)
+    sql &= " AND name = " & SurroundWithChar(db.SQLEncode(model.name), "'")
+
+    Dim tbl = New DataTable()
+    Dim adapter = db.GetDataAdapter(sql)
+    adapter.Fill(tbl)
+
+    If tbl.Rows.Count = 0 Then
+        Throw New Exception("ProcurerApprovalStringController.Update: Cannot find row with request_id = " & model.requestId & " and name = " & SurroundWithChar(model.name, "'"))
+    End If
+
+    'Update the target row
+    Dim row = tbl.Rows(0)
+    row("request_id") = model.requestId
+    row("name") = model.name
+    row("value") = model.value
+    
+    db.Update(adapter, tbl)
+End Sub
