@@ -1,0 +1,19 @@
+Public Shared Sub Create(db As ETS.OleDB, model As PtcApprovalModel)
+    Dim adapter = db.GetTableDataAdapter(PtcApprovalModel.tableName)
+    Dim tbl = New DataTable()
+    adapter.Fill(tbl)
+
+    Dim row = tbl.NewRow()
+    row("tender_id") = model.tenderId
+    row("submission_deadline") = model.submissionDeadline
+    row("category") = model.category
+    row("date_created") = model.dateCreated
+    row("created_by_user_id") = model.createdByUserId
+    row("created_by") = model.createdBy
+    row("status") = model.status
+    row("ref") = model.ref
+
+    ' Update the table in my_ds with my_da
+    tbl.Rows.Add(row)
+    db.Update(adapter, tbl)
+End Sub

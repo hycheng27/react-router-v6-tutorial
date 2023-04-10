@@ -1,4 +1,4 @@
-import { snakeToCamelCase } from './codeUtil';
+import { snakeToCamelCase, numberToWord } from './codeUtil';
 
 export function getColumnDefinitions(tableDefColLines) {
   // For each line of tableDefColLines, get the column name, type, and if it's nullable.
@@ -40,6 +40,12 @@ export function getColumnDefinitions(tableDefColLines) {
         type: splittedLine[1],
         isNullable: splittedLine[2] === 'NULL' ? true : false,
       };
+
+      // replace with english word if the first char is a number
+      if (lineObj.name[0] >= '0' && lineObj.name[0] <= '9') {
+        lineObj.name = numberToWord(lineObj.name[0]) + '_' + lineObj.name.substring(1);
+      }
+
       return lineObj;
     })
     .sort((a, b) => {

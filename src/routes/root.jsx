@@ -5,7 +5,7 @@ export default function Root() {
 
   return (
     <>
-      <div id='sidebar'>
+      <div id="sidebar">
         <h1>My VB Tools</h1>
         <nav>
           <ul>
@@ -14,9 +14,7 @@ export default function Root() {
                 <li key={`tool-${i}`}>
                   <NavLink
                     to={`tools/${tool.url}`}
-                    className={({ isActive, isPending }) =>
-                      isActive ? 'active' : isPending ? 'pending' : ''
-                    }
+                    className={({ isActive, isPending }) => (isActive ? 'active' : isPending ? 'pending' : '')}
                   >
                     {tool.name}
                   </NavLink>
@@ -30,11 +28,7 @@ export default function Root() {
           </ul>
         </nav>
       </div>
-      <div
-        id='detail'
-        className={navigation.state === 'loading' ? 'loading' : ''}
-        style={{ overflow: 'auto' }}
-      >
+      <div id="detail" style={{ overflow: 'auto' }}>
         <Outlet />
       </div>
     </>
